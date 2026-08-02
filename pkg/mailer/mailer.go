@@ -8,6 +8,7 @@ import (
 	"net/smtp"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Mailer interface {
@@ -60,7 +61,7 @@ func (m *SMTPMailer) SendEmail(to string, subject string, body string, attachmen
 		buf.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
 		buf.WriteString("Content-Transfer-Encoding: 7bit\r\n")
 		buf.WriteString("\r\n")
-		buf.WriteString(body)
+		buf.WriteString(toCRLF(body))
 		buf.WriteString("\r\n")
 
 		fileBytes, err := os.ReadFile(attachmentPath)
@@ -94,7 +95,7 @@ func (m *SMTPMailer) SendEmail(to string, subject string, body string, attachmen
 		buf.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
 		buf.WriteString("Content-Transfer-Encoding: 7bit\r\n")
 		buf.WriteString("\r\n")
-		buf.WriteString(body)
+		buf.WriteString(toCRLF(body))
 	}
 
 	err := smtp.SendMail(addr, auth, m.Username, []string{to}, buf.Bytes())
@@ -103,4 +104,10 @@ func (m *SMTPMailer) SendEmail(to string, subject string, body string, attachmen
 	}
 
 	return nil
+}
+
+// toCRLF normalizes line endings in a string to CRLF (\r\n) as required by SMTP specs.
+func toCRLF(input string) string {
+	input = strings.ReplaceAll(input, "\r\n", "\n")
+	return strings.ReplaceAll(input, "\n", "\r\n")
 }

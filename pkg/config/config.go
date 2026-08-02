@@ -9,18 +9,19 @@ import (
 )
 
 type Config struct {
-	TelegramBotToken  string
-	GeminiAPIKey      string
-	GeminiModel       string
-	SMTPHost          string
-	SMTPPort          int
-	SMTPUser          string
-	SMTPPass          string
-	DefaultSenderName string
-	DevCVPath         string
-	DevCVSummaryPath  string
-	FnBCVPath         string
-	FnBCVSummaryPath  string
+	TelegramBotToken        string
+	GeminiAPIKey            string
+	GeminiModel             string
+	SMTPHost                string
+	SMTPPort                int
+	SMTPUser                string
+	SMTPPass                string
+	DefaultSenderName       string
+	DevCVPath               string
+	DevCVSummaryPath        string
+	FnBCVPath               string
+	FnBCVSummaryPath        string
+	AllowedTelegramUsername string
 }
 
 // LoadConfig parses the configuration key-value pairs from the environment file.
@@ -65,17 +66,18 @@ func LoadConfig(envPath string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		TelegramBotToken:  envVars["TELEGRAM_BOT_TOKEN"],
-		GeminiAPIKey:      envVars["GEMINI_API_KEY"],
-		GeminiModel:       model,
-		SMTPHost:          envVars["SMTP_HOST"],
-		SMTPUser:          envVars["SMTP_USER"],
-		SMTPPass:          envVars["SMTP_PASS"],
-		DefaultSenderName: envVars["DEFAULT_SENDER_NAME"],
-		DevCVPath:         envVars["DEV_CV_PATH"],
-		DevCVSummaryPath:  envVars["DEV_CV_SUMMARY_PATH"],
-		FnBCVPath:         envVars["FNB_CV_PATH"],
-		FnBCVSummaryPath:  envVars["FNB_CV_SUMMARY_PATH"],
+		TelegramBotToken:        envVars["TELEGRAM_BOT_TOKEN"],
+		GeminiAPIKey:            envVars["GEMINI_API_KEY"],
+		GeminiModel:             model,
+		SMTPHost:                envVars["SMTP_HOST"],
+		SMTPUser:                envVars["SMTP_USER"],
+		SMTPPass:                envVars["SMTP_PASS"],
+		DefaultSenderName:       envVars["DEFAULT_SENDER_NAME"],
+		DevCVPath:               envVars["DEV_CV_PATH"],
+		DevCVSummaryPath:        envVars["DEV_CV_SUMMARY_PATH"],
+		FnBCVPath:               envVars["FNB_CV_PATH"],
+		FnBCVSummaryPath:        envVars["FNB_CV_SUMMARY_PATH"],
+		AllowedTelegramUsername: envVars["ALLOWED_TELEGRAM_USERNAME"],
 	}
 
 	portStr := envVars["SMTP_PORT"]
@@ -116,6 +118,9 @@ func LoadConfig(envPath string) (*Config, error) {
 	}
 	if cfg.FnBCVSummaryPath == "" {
 		return nil, fmt.Errorf("FNB_CV_SUMMARY_PATH is required in %s", envPath)
+	}
+	if cfg.AllowedTelegramUsername == "" {
+		return nil, fmt.Errorf("ALLOWED_TELEGRAM_USERNAME is required in %s", envPath)
 	}
 
 	return cfg, nil

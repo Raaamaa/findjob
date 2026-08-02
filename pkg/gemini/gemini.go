@@ -81,7 +81,7 @@ Draf email WAJIB mengikuti format template berikut ini secara presisi, dengan me
 
 Dengan hormat,
 
-Sehubungan dengan lowongan posisi [Nama Posisi] yang saya temukan, saya tertarik untuk mengajukan lamaran. Sebagai seorang [Posisi Anda/Sesuai Ringkasan CV], dengan pengalaman [Jumlah waktu/bulan/pendidikan] dalam [Bidang/Keahlian], saya telah berhasil [Proyek/Capaian 1 dari CV] dan [Proyek/Capaian 2 dari CV].
+Sehubungan dengan lowongan posisi [Nama Posisi] yang saya temukan, saya tertarik untuk mengajukan lamaran. Dengan latar belakang [Pendidikan/Pengalaman Terakhir Anda] dan pengalaman selama [Jumlah waktu/bulan/tahun] di bidang [Bidang/Keahlian], saya pernah [Capaian/Pekerjaan 1 dari CV] serta [Capaian/Pekerjaan 2 dari CV].
 
 Keterampilan saya dalam [Keterampilan 1], [Keterampilan 2], dan [Keterampilan 3] sangat relevan dengan persyaratan yang tercantum dalam deskripsi pekerjaan. Saya yakin dapat memberikan kontribusi yang signifikan dalam [Area spesifik pekerjaan/Tujuan lowongan].
 
@@ -92,9 +92,12 @@ Terima kasih atas perhatiannya.
 Hormat saya,
 [Nama Lengkap Pelamar]
 [Alamat Email Pelamar]
+No. HP/WhatsApp: 081215536136
 
 Ketentuan Tambahan:
 - Subjek email (subject) wajib menggunakan subjek khusus yang diminta/tertulis di dalam gambar lowongan (misalnya "Kitchen_peachy"). Jika tidak ada instruksi subjek khusus di dalam gambar, gunakan format: "Berkas Lamaran - [Nama Lengkap Pelamar] - [Nama Posisi]"
+- Draf email wajib menggunakan baris kosong (double newline) untuk memisahkan setiap paragraf agar terlihat rapi dan terstruktur.
+- Jangan menggunakan kata-kata overclaim atau berlebihan seperti "profesional", "professional", "ahli", "expert", dll. Tuliskan peran atau latar belakang secara jujur dan apa adanya sesuai dengan riwayat pada CV (misalnya: "lulusan Informatika", "pernah bekerja sebagai barista", "memiliki pengalaman sebagai kitchen staff").
 - Jangan sertakan placeholder kosong atau teks tanda kurung siku [] dalam draf akhir. Semua harus terisi menggunakan data nyata.`, cvDevSummary, cvFnBSummary)
 
 	parts := []*genai.Part{

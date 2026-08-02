@@ -27,6 +27,7 @@ DEV_CV_PATH=cv-dev.pdf
 DEV_CV_SUMMARY_PATH=cv-dev.md
 FNB_CV_PATH=cv-fnb.pdf
 FNB_CV_SUMMARY_PATH=cv-fnb.md
+ALLOWED_TELEGRAM_USERNAME=test_user
 `
 	if err := os.WriteFile(envFile, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to write test env: %v", err)
@@ -69,6 +70,9 @@ FNB_CV_SUMMARY_PATH=cv-fnb.md
 	}
 	if cfg.FnBCVSummaryPath != "cv-fnb.md" {
 		t.Errorf("expected FnBCVSummaryPath cv-fnb.md, got %s", cfg.FnBCVSummaryPath)
+	}
+	if cfg.AllowedTelegramUsername != "test_user" {
+		t.Errorf("expected AllowedTelegramUsername test_user, got %s", cfg.AllowedTelegramUsername)
 	}
 }
 

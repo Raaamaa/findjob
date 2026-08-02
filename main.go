@@ -80,8 +80,14 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil {
+			if update.Message.From == nil || strings.ToLower(update.Message.From.UserName) != strings.ToLower(cfg.AllowedTelegramUsername) {
+				continue
+			}
 			handleMessage(ctx, bot, update.Message, geminiSvc, cfg)
 		} else if update.CallbackQuery != nil {
+			if update.CallbackQuery.From == nil || strings.ToLower(update.CallbackQuery.From.UserName) != strings.ToLower(cfg.AllowedTelegramUsername) {
+				continue
+			}
 			handleCallbackQuery(bot, update.CallbackQuery, cfg)
 		}
 	}
@@ -340,13 +346,18 @@ func downloadPhoto(url string) ([]byte, string, error) {
 	}
 
 	mimeType := resp.Header.Get("Content-Type")
-	if mimeType == "" {
-		if strings.HasSuffix(strings.ToLower(url), ".png") {
-			mimeType = "image/png"
-		} else if strings.HasSuffix(strings.ToLower(url), ".webp") {
-			mimeType = "image/webp"
+	if mimeType == "" || mimeType == "application/octet-stream" {
+		detected := http.DetectContentType(data)
+		if detected != "application/octet-stream" {
+			mimeType = detected
 		} else {
-			mimeType = "image/jpeg"
+			if strings.HasSuffix(strings.ToLower(url), ".png") {
+				mimeType = "image/png"
+			} else if strings.HasSuffix(strings.ToLower(url), ".webp") {
+				mimeType = "image/webp"
+			} else {
+				mimeType = "image/jpeg"
+			}
 		}
 	}
 
