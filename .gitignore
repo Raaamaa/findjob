@@ -1,0 +1,8 @@
+.env
+history.json
+jobber
+*.test
+*.log
+*.pdf
+cv-dev.md
+cv-fnb.md
