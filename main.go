@@ -19,13 +19,13 @@ import (
 )
 
 type PendingJob struct {
-	Company        string
-	Position       string
-	Email          string
-	Subject        string
-	EmailDraft     string
-	SelectedCVPath string
-	ImageHash      string
+	Company    string
+	Position   string
+	Email      string
+	Subject    string
+	EmailDraft string
+	CVPath     string
+	ImageHash  string
 }
 
 var (
@@ -47,17 +47,11 @@ func main() {
 		log.Fatalf("Error: Gagal memuat konfigurasi: %v", err)
 	}
 
-	if _, err := os.Stat(cfg.DevCVPath); os.IsNotExist(err) {
-		log.Fatalf("Error: Berkas CV Developer PDF '%s' tidak ditemukan.", cfg.DevCVPath)
+	if _, err := os.Stat(cfg.CVPath); os.IsNotExist(err) {
+		log.Fatalf("Error: Berkas CV PDF '%s' tidak ditemukan.", cfg.CVPath)
 	}
-	if _, err := os.Stat(cfg.DevCVSummaryPath); os.IsNotExist(err) {
-		log.Fatalf("Error: Berkas Ringkasan CV Developer '%s' tidak ditemukan.", cfg.DevCVSummaryPath)
-	}
-	if _, err := os.Stat(cfg.FnBCVPath); os.IsNotExist(err) {
-		log.Fatalf("Error: Berkas CV FnB PDF '%s' tidak ditemukan.", cfg.FnBCVPath)
-	}
-	if _, err := os.Stat(cfg.FnBCVSummaryPath); os.IsNotExist(err) {
-		log.Fatalf("Error: Berkas Ringkasan CV FnB '%s' tidak ditemukan.", cfg.FnBCVSummaryPath)
+	if _, err := os.Stat(cfg.CVSummaryPath); os.IsNotExist(err) {
+		log.Fatalf("Error: Berkas Ringkasan CV '%s' tidak ditemukan.", cfg.CVSummaryPath)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBotToken)
@@ -113,7 +107,7 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 	if strings.HasPrefix(msg.Text, "/edit ") || strings.HasPrefix(msg.Text, ".edit ") {
 		parts := strings.SplitN(msg.Text, " ", 3)
 		if len(parts) < 3 {
-			bot.Send(tgbotapi.NewMessage(chatID, "Format salah. Gunakan: /edit <email/subject/body> <nilai_baru>"))
+			bot.Send(tgbotapi.NewMessage(chatID, "Format salah. Gunakan: /edit <company/position/email/subject/body> <nilai_baru>"))
 			return
 		}
 		field := strings.ToLower(parts[1])
@@ -128,6 +122,10 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 		}
 
 		switch field {
+		case "company":
+			pending.Company = value
+		case "position":
+			pending.Position = value
 		case "email":
 			pending.Email = value
 		case "subject":
@@ -136,7 +134,7 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 			pending.EmailDraft = value
 		default:
 			pendingMu.Unlock()
-			bot.Send(tgbotapi.NewMessage(chatID, "Bidang tidak dikenal. Pilih salah satu: email, subject, body"))
+			bot.Send(tgbotapi.NewMessage(chatID, "Bidang tidak dikenal. Pilih salah satu: company, position, email, subject, body"))
 			return
 		}
 
@@ -149,6 +147,9 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 		pendingMu.Unlock()
 
 		var previewBuilder strings.Builder
+		if err := mailer.ValidateEmail(email); err != nil {
+			previewBuilder.WriteString("⚠️ PERINGATAN: Format email tujuan belum valid. Gunakan '/edit email <alamat_email>' untuk mengoreksi.\n\n")
+		}
 		previewBuilder.WriteString(fmt.Sprintf("=== DETAIL LOWONGAN (UPDATED) ===\nPerusahaan: %s\nPosisi: %s\nEmail Tujuan: %s\nSubjek: %s\n=======================\n\n*** DRAFT EMAIL LAMARAN ***\n%s\n***************************",
 			company, position, email, subject, draft))
 
@@ -166,7 +167,7 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "start":
-			reply := "Halo! Selamat datang di Jobber Bot.\n\nKirimkan gambar/screenshot lowongan kerja Anda ke chat ini, dan saya akan mengekstrak detail lowongan, merumuskan draf email lamaran secara otomatis sesuai CV Anda, dan mengirimkannya setelah Anda melakukan konfirmasi.\n\nAnda dapat mengoreksi hasil ekstraksi sebelum mengirim menggunakan perintah:\n- /edit email <email_baru>\n- /edit subject <subjek_baru>\n- /edit body <draf_baru>\n\nGunakan perintah /clear atau .clear untuk menghapus sesi aktif Anda."
+			reply := "Halo! Selamat datang di Jobber Bot.\n\nKirimkan gambar/screenshot lowongan kerja Anda ke chat ini, dan saya akan mengekstrak detail lowongan, merumuskan draf email lamaran secara otomatis sesuai CV Anda, dan mengirimkannya setelah Anda melakukan konfirmasi.\n\nAnda dapat mengoreksi hasil ekstraksi sebelum mengirim menggunakan perintah:\n- /edit company <nama_perusahaan>\n- /edit position <nama_posisi>\n- /edit email <email_baru>\n- /edit subject <subjek_baru>\n- /edit body <draf_baru>\n\nGunakan perintah /clear atau .clear untuk menghapus sesi aktif Anda."
 			bot.Send(tgbotapi.NewMessage(chatID, reply))
 		default:
 			bot.Send(tgbotapi.NewMessage(chatID, "Perintah tidak dikenal. Kirimkan gambar lowongan kerja untuk memulai."))
@@ -205,33 +206,20 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 
 		updateStatus(bot, chatID, statusMsg.MessageID, "Membaca data CV dan menganalisis lowongan kerja dengan AI...")
 
-		devCVSummaryBytes, err := os.ReadFile(cfg.DevCVSummaryPath)
+		cvSummaryBytes, err := os.ReadFile(cfg.CVSummaryPath)
 		if err != nil {
-			updateStatus(bot, chatID, statusMsg.MessageID, fmt.Sprintf("Error: Gagal membaca file CV Developer: %v", err))
+			updateStatus(bot, chatID, statusMsg.MessageID, fmt.Sprintf("Error: Gagal membaca file ringkasan CV: %v", err))
 			return
 		}
 
-		fnbCVSummaryBytes, err := os.ReadFile(cfg.FnBCVSummaryPath)
-		if err != nil {
-			updateStatus(bot, chatID, statusMsg.MessageID, fmt.Sprintf("Error: Gagal membaca file CV FnB: %v", err))
-			return
-		}
-
-		details, err := geminiSvc.ExtractJobDetails(ctx, imageBytes, mimeType, string(devCVSummaryBytes), string(fnbCVSummaryBytes))
+		details, err := geminiSvc.ExtractJobDetails(ctx, imageBytes, mimeType, string(cvSummaryBytes))
 		if err != nil {
 			updateStatus(bot, chatID, statusMsg.MessageID, fmt.Sprintf("Error: Gagal menganalisis lowongan via Gemini: %v", err))
 			return
 		}
 
-		var selectedCVPath string
-		var catName string
-
-		if details.Category == "FNB" {
-			catName = "Barista / Food & Beverage"
-			selectedCVPath = cfg.FnBCVPath
-		} else {
-			catName = "Software / Fullstack Developer"
-			selectedCVPath = cfg.DevCVPath
+		if err := mailer.ValidateEmail(details.Email); err != nil {
+			warnText = append(warnText, "⚠️ PERINGATAN: Email penerima tidak terdeteksi atau tidak valid pada gambar lowongan. Gunakan perintah '/edit email <alamat_email>' untuk melengkapi.")
 		}
 
 		_, hasContact := history.CheckDuplicate(entries, "", details.Email, details.Position)
@@ -241,13 +229,13 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 
 		pendingMu.Lock()
 		pendingJobs[chatID] = &PendingJob{
-			Company:        details.Company,
-			Position:       details.Position,
-			Email:          details.Email,
-			Subject:        details.Subject,
-			EmailDraft:     details.EmailDraft,
-			SelectedCVPath: selectedCVPath,
-			ImageHash:      imgHash,
+			Company:    details.Company,
+			Position:   details.Position,
+			Email:      details.Email,
+			Subject:    details.Subject,
+			EmailDraft: details.EmailDraft,
+			CVPath:     cfg.CVPath,
+			ImageHash:  imgHash,
 		}
 		pendingMu.Unlock()
 
@@ -258,8 +246,8 @@ func handleMessage(ctx context.Context, bot *tgbotapi.BotAPI, msg *tgbotapi.Mess
 			previewBuilder.WriteString(strings.Join(warnText, "\n"))
 			previewBuilder.WriteString("\n\n")
 		}
-		previewBuilder.WriteString(fmt.Sprintf("=== DETAIL LOWONGAN ===\nKategori Terdeteksi: %s\nPerusahaan: %s\nPosisi: %s\nEmail Tujuan: %s\nSubjek: %s\n=======================\n\n*** DRAFT EMAIL LAMARAN ***\n%s\n***************************",
-			catName, details.Company, details.Position, details.Email, details.Subject, details.EmailDraft))
+		previewBuilder.WriteString(fmt.Sprintf("=== DETAIL LOWONGAN ===\nPerusahaan: %s\nPosisi: %s\nEmail Tujuan: %s\nSubjek: %s\n=======================\n\n*** DRAFT EMAIL LAMARAN ***\n%s\n***************************",
+			details.Company, details.Position, details.Email, details.Subject, details.EmailDraft))
 
 		replyMsg := tgbotapi.NewMessage(chatID, previewBuilder.String())
 		replyMsg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
@@ -283,7 +271,11 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, cfg *
 	bot.Request(callback)
 
 	pendingMu.Lock()
-	pending, exists := pendingJobs[chatID]
+	pendingPtr, exists := pendingJobs[chatID]
+	var pending PendingJob
+	if exists && pendingPtr != nil {
+		pending = *pendingPtr
+	}
 	pendingMu.Unlock()
 
 	if !exists {
@@ -296,7 +288,7 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, cfg *
 		statusMsg, _ := bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("Mengirim email lamaran ke %s...", pending.Email)))
 
 		mailSvc := mailer.NewSMTPMailer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.DefaultSenderName)
-		err := mailSvc.SendEmail(pending.Email, pending.Subject, pending.EmailDraft, pending.SelectedCVPath)
+		err := mailSvc.SendEmail(pending.Email, pending.Subject, pending.EmailDraft, pending.CVPath)
 		if err != nil {
 			bot.Send(tgbotapi.NewDeleteMessage(chatID, statusMsg.MessageID))
 			bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("Gagal mengirim email: %v", err)))
@@ -319,7 +311,7 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, cfg *
 		pendingMu.Unlock()
 
 	case "deny":
-		edit := tgbotapi.NewEditMessageText(chatID, messageID, "=== STATUS: DIRETUR / DIBATALKAN ===")
+		edit := tgbotapi.NewEditMessageText(chatID, messageID, "=== STATUS: DITOLAK / DIBATALKAN ===")
 		bot.Send(edit)
 
 		pendingMu.Lock()

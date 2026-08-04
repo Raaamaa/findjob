@@ -23,11 +23,9 @@ SMTP_PORT=587
 SMTP_USER=user@example.com
 SMTP_PASS=password123
 DEFAULT_SENDER_NAME=Test Name
-DEV_CV_PATH=cv-dev.pdf
-DEV_CV_SUMMARY_PATH=cv-dev.md
-FNB_CV_PATH=cv-fnb.pdf
-FNB_CV_SUMMARY_PATH=cv-fnb.md
-ALLOWED_TELEGRAM_USERNAME=test_user
+CV_PATH=cv.pdf
+CV_SUMMARY_PATH=cv.md
+ALLOWED_TELEGRAM_USERNAME=@test_user
 `
 	if err := os.WriteFile(envFile, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to write test env: %v", err)
@@ -44,6 +42,9 @@ ALLOWED_TELEGRAM_USERNAME=test_user
 	if cfg.GeminiAPIKey != "test_api_key" {
 		t.Errorf("expected GeminiAPIKey test_api_key, got %s", cfg.GeminiAPIKey)
 	}
+	if cfg.GeminiModel != "gemini-2.5-flash" {
+		t.Errorf("expected GeminiModel gemini-2.5-flash, got %s", cfg.GeminiModel)
+	}
 	if cfg.SMTPHost != "smtp.example.com" {
 		t.Errorf("expected SMTPHost smtp.example.com, got %s", cfg.SMTPHost)
 	}
@@ -59,17 +60,11 @@ ALLOWED_TELEGRAM_USERNAME=test_user
 	if cfg.DefaultSenderName != "Test Name" {
 		t.Errorf("expected DefaultSenderName Test Name, got %s", cfg.DefaultSenderName)
 	}
-	if cfg.DevCVPath != "cv-dev.pdf" {
-		t.Errorf("expected DevCVPath cv-dev.pdf, got %s", cfg.DevCVPath)
+	if cfg.CVPath != "cv.pdf" {
+		t.Errorf("expected CVPath cv.pdf, got %s", cfg.CVPath)
 	}
-	if cfg.DevCVSummaryPath != "cv-dev.md" {
-		t.Errorf("expected DevCVSummaryPath cv-dev.md, got %s", cfg.DevCVSummaryPath)
-	}
-	if cfg.FnBCVPath != "cv-fnb.pdf" {
-		t.Errorf("expected FnBCVPath cv-fnb.pdf, got %s", cfg.FnBCVPath)
-	}
-	if cfg.FnBCVSummaryPath != "cv-fnb.md" {
-		t.Errorf("expected FnBCVSummaryPath cv-fnb.md, got %s", cfg.FnBCVSummaryPath)
+	if cfg.CVSummaryPath != "cv.md" {
+		t.Errorf("expected CVSummaryPath cv.md, got %s", cfg.CVSummaryPath)
 	}
 	if cfg.AllowedTelegramUsername != "test_user" {
 		t.Errorf("expected AllowedTelegramUsername test_user, got %s", cfg.AllowedTelegramUsername)

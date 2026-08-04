@@ -13,7 +13,6 @@ import (
 )
 
 type JobDetails struct {
-	Category   string `json:"category"`
 	Company    string `json:"company"`
 	Position   string `json:"position"`
 	Email      string `json:"email"`
@@ -37,7 +36,7 @@ func NewService(ctx context.Context, apiKey string, model string) (*Service, err
 	}
 
 	if model == "" {
-		model = "gemini-3.5-flash-lite"
+		model = "gemini-2.5-flash"
 	}
 
 	return &Service{
@@ -46,19 +45,18 @@ func NewService(ctx context.Context, apiKey string, model string) (*Service, err
 	}, nil
 }
 
-// ExtractJobDetails extracts relevant info from the job ad image and generates an email draft using CV details.
-func (s *Service) ExtractJobDetails(ctx context.Context, imageBytes []byte, mimeType string, cvDevSummary string, cvFnBSummary string) (*JobDetails, error) {
+// ExtractJobDetails extracts relevant info from the job ad image and generates an email draft using a single CV summary.
+func (s *Service) ExtractJobDetails(ctx context.Context, imageBytes []byte, mimeType string, cvSummary string) (*JobDetails, error) {
 	schema := &genai.Schema{
 		Type: genai.TypeObject,
 		Properties: map[string]*genai.Schema{
-			"category":    {Type: genai.TypeString, Enum: []string{"DEV", "FNB"}, Description: "Kategori pekerjaan. DEV untuk lowongan IT/software developer/programmer, FNB untuk barista/kitchen/service/FnB cafe."},
-			"company":     {Type: genai.TypeString, Description: "Nama perusahaan"},
+			"company":     {Type: genai.TypeString, Description: "Nama perusahaan yang membuka lowongan"},
 			"position":    {Type: genai.TypeString, Description: "Posisi pekerjaan yang dilamar"},
-			"email":       {Type: genai.TypeString, Description: "Alamat email penerima lowongan"},
+			"email":       {Type: genai.TypeString, Description: "Alamat email penerima lamaran. Jika tidak ada di gambar, isi string kosong."},
 			"subject":     {Type: genai.TypeString, Description: "Subjek email lamaran yang profesional"},
-			"email_draft": {Type: genai.TypeString, Description: "Draft email lamaran / cover letter dalam bahasa Indonesia yang disesuaikan dengan deskripsi pekerjaan pada gambar lowongan dan menggunakan informasi dari data CV pelamar yang sesuai. Tulis secara sopan dan profesional. Jangan ada placeholder yang belum terisi."},
+			"email_draft": {Type: genai.TypeString, Description: "Draft email lamaran / cover letter dalam bahasa Indonesia yang disesuaikan dengan deskripsi pekerjaan pada gambar lowongan dan menggunakan informasi dari data CV pelamar. Tulis secara sopan dan profesional. Jangan ada placeholder yang belum terisi."},
 		},
-		Required: []string{"category", "company", "position", "email", "subject", "email_draft"},
+		Required: []string{"company", "position", "email", "subject", "email_draft"},
 	}
 
 	config := &genai.GenerateContentConfig{
@@ -66,18 +64,17 @@ func (s *Service) ExtractJobDetails(ctx context.Context, imageBytes []byte, mime
 		ResponseSchema:   schema,
 	}
 
-	prompt := fmt.Sprintf(`Menganalisis gambar lowongan kerja ini. Tentukan apakah ini merupakan lowongan kerja untuk pengembang perangkat lunak/IT/programmer (kategori "DEV") atau lowongan kerja untuk industri makanan/minuman/barista/café (kategori "FNB").
-Berdasarkan kategori tersebut, pilih salah satu dari data CV pelamar berikut yang cocok untuk menulis draft email lamaran (email_draft) dan subjek email (subject):
+	prompt := fmt.Sprintf(`Analisis gambar lowongan kerja ini dan ekstrak informasi yang diperlukan untuk membuat lamaran pekerjaan.
 
-=== Data CV Developer ===
+Berikut adalah data CV pelamar yang harus kamu gunakan sebagai referensi untuk membuat draft email lamaran:
+
+=== Data CV Pelamar ===
 %s
-=========================
+======================
 
-=== Data CV FnB/Barista ===
-%s
-===========================
+Buat email lamaran yang disesuaikan dengan deskripsi pekerjaan pada gambar. Hubungkan keahlian dan pengalaman pelamar dari CV di atas dengan kebutuhan lowongan tersebut secara relevan dan logis, meskipun bidangnya berbeda. Misalnya, keahlian visual/desain bisa dihubungkan dengan kebutuhan promosi, branding, atau media sosial perusahaan.
 
-Draf email WAJIB mengikuti format template berikut ini secara presisi, dengan mengganti semua placeholder bertanda [] menggunakan informasi yang sesuai dari data CV yang terpilih dan gambar lowongan:
+Draf email WAJIB mengikuti format template berikut ini secara presisi, dengan mengganti semua placeholder bertanda [] menggunakan informasi yang sesuai dari data CV dan gambar lowongan:
 
 Dengan hormat,
 
@@ -92,13 +89,14 @@ Terima kasih atas perhatiannya.
 Hormat saya,
 [Nama Lengkap Pelamar]
 [Alamat Email Pelamar]
-No. HP/WhatsApp: 081215536136
+No. HP/WhatsApp: 088232248005
+Portofolio: https://ramadhani-portofolio.vercel.app/
 
 Ketentuan Tambahan:
 - Subjek email (subject) wajib menggunakan subjek khusus yang diminta/tertulis di dalam gambar lowongan (misalnya "Kitchen_peachy"). Jika tidak ada instruksi subjek khusus di dalam gambar, gunakan format: "Berkas Lamaran - [Nama Lengkap Pelamar] - [Nama Posisi]"
 - Draf email wajib menggunakan baris kosong (double newline) untuk memisahkan setiap paragraf agar terlihat rapi dan terstruktur.
-- Jangan menggunakan kata-kata overclaim atau berlebihan seperti "profesional", "professional", "ahli", "expert", dll. Tuliskan peran atau latar belakang secara jujur dan apa adanya sesuai dengan riwayat pada CV (misalnya: "lulusan Informatika", "pernah bekerja sebagai barista", "memiliki pengalaman sebagai kitchen staff").
-- Jangan sertakan placeholder kosong atau teks tanda kurung siku [] dalam draf akhir. Semua harus terisi menggunakan data nyata.`, cvDevSummary, cvFnBSummary)
+- Jangan menggunakan kata-kata overclaim atau berlebihan seperti "profesional", "professional", "ahli", "expert", dll. Tuliskan peran atau latar belakang secara jujur dan apa adanya sesuai dengan riwayat pada CV (misalnya: "lulusan Komunikasi Visual", "pernah bekerja sebagai video editor freelance", "memiliki pengalaman membuat konten media sosial").
+- Jangan sertakan placeholder kosong atau teks tanda kurung siku [] dalam draf akhir. Semua harus terisi menggunakan data nyata dari CV.`, cvSummary)
 
 	parts := []*genai.Part{
 		{Text: prompt},
@@ -138,8 +136,14 @@ Ketentuan Tambahan:
 		return nil, fmt.Errorf("failed to generate content after %d attempts: %w", maxAttempts, lastErr)
 	}
 
+	rawText := strings.TrimSpace(resp.Text())
+	rawText = strings.TrimPrefix(rawText, "```json")
+	rawText = strings.TrimPrefix(rawText, "```")
+	rawText = strings.TrimSuffix(rawText, "```")
+	rawText = strings.TrimSpace(rawText)
+
 	var details JobDetails
-	if err := json.Unmarshal([]byte(resp.Text()), &details); err != nil {
+	if err := json.Unmarshal([]byte(rawText), &details); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON response: %w. Response text: %s", err, resp.Text())
 	}
 

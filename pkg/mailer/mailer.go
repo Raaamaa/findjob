@@ -2,9 +2,11 @@ package mailer
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"mime"
+	"net/mail"
 	"net/smtp"
 	"os"
 	"path/filepath"
@@ -23,6 +25,19 @@ type SMTPMailer struct {
 	SenderName string
 }
 
+// ValidateEmail checks if the given email address has a valid syntax.
+func ValidateEmail(email string) error {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return fmt.Errorf("email address is empty")
+	}
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("invalid email address '%s': %w", email, err)
+	}
+	return nil
+}
+
 // NewSMTPMailer creates a new SMTP-based Mailer instance.
 func NewSMTPMailer(host string, port int, username string, password string, senderName string) *SMTPMailer {
 	return &SMTPMailer{
@@ -36,6 +51,10 @@ func NewSMTPMailer(host string, port int, username string, password string, send
 
 // SendEmail sends a raw SMTP email with optional PDF attachment.
 func (m *SMTPMailer) SendEmail(to string, subject string, body string, attachmentPath string) error {
+	if err := ValidateEmail(to); err != nil {
+		return err
+	}
+
 	addr := fmt.Sprintf("%s:%d", m.Host, m.Port)
 	auth := smtp.PlainAuth("", m.Username, m.Password, m.Host)
 
@@ -96,6 +115,54 @@ func (m *SMTPMailer) SendEmail(to string, subject string, body string, attachmen
 		buf.WriteString("Content-Transfer-Encoding: 7bit\r\n")
 		buf.WriteString("\r\n")
 		buf.WriteString(toCRLF(body))
+	}
+
+	if m.Port == 465 {
+		tlsconfig := &tls.Config{
+			InsecureSkipVerify: false,
+			ServerName:         m.Host,
+		}
+
+		conn, err := tls.Dial("tcp", addr, tlsconfig)
+		if err != nil {
+			return fmt.Errorf("failed to connect via TLS to %s: %w", addr, err)
+		}
+		defer conn.Close()
+
+		client, err := smtp.NewClient(conn, m.Host)
+		if err != nil {
+			return fmt.Errorf("failed to create SMTP client: %w", err)
+		}
+		defer client.Quit()
+
+		if err = client.Auth(auth); err != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", err)
+		}
+
+		if err = client.Mail(m.Username); err != nil {
+			return fmt.Errorf("SMTP MAIL command failed: %w", err)
+		}
+
+		if err = client.Rcpt(to); err != nil {
+			return fmt.Errorf("SMTP RCPT command failed: %w", err)
+		}
+
+		w, err := client.Data()
+		if err != nil {
+			return fmt.Errorf("SMTP DATA command failed: %w", err)
+		}
+
+		_, err = w.Write(buf.Bytes())
+		if err != nil {
+			return fmt.Errorf("failed to write SMTP payload: %w", err)
+		}
+
+		err = w.Close()
+		if err != nil {
+			return fmt.Errorf("failed to close SMTP writer: %w", err)
+		}
+
+		return nil
 	}
 
 	err := smtp.SendMail(addr, auth, m.Username, []string{to}, buf.Bytes())

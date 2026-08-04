@@ -17,10 +17,8 @@ type Config struct {
 	SMTPUser                string
 	SMTPPass                string
 	DefaultSenderName       string
-	DevCVPath               string
-	DevCVSummaryPath        string
-	FnBCVPath               string
-	FnBCVSummaryPath        string
+	CVPath                  string
+	CVSummaryPath           string
 	AllowedTelegramUsername string
 }
 
@@ -62,7 +60,7 @@ func LoadConfig(envPath string) (*Config, error) {
 
 	model := envVars["GEMINI_MODEL"]
 	if model == "" {
-		model = "gemini-3.5-flash-lite"
+		model = "gemini-2.5-flash"
 	}
 
 	cfg := &Config{
@@ -73,11 +71,9 @@ func LoadConfig(envPath string) (*Config, error) {
 		SMTPUser:                envVars["SMTP_USER"],
 		SMTPPass:                envVars["SMTP_PASS"],
 		DefaultSenderName:       envVars["DEFAULT_SENDER_NAME"],
-		DevCVPath:               envVars["DEV_CV_PATH"],
-		DevCVSummaryPath:        envVars["DEV_CV_SUMMARY_PATH"],
-		FnBCVPath:               envVars["FNB_CV_PATH"],
-		FnBCVSummaryPath:        envVars["FNB_CV_SUMMARY_PATH"],
-		AllowedTelegramUsername: envVars["ALLOWED_TELEGRAM_USERNAME"],
+		CVPath:                  envVars["CV_PATH"],
+		CVSummaryPath:           envVars["CV_SUMMARY_PATH"],
+		AllowedTelegramUsername: strings.TrimPrefix(envVars["ALLOWED_TELEGRAM_USERNAME"], "@"),
 	}
 
 	portStr := envVars["SMTP_PORT"]
@@ -107,17 +103,11 @@ func LoadConfig(envPath string) (*Config, error) {
 	if cfg.SMTPPass == "" {
 		return nil, fmt.Errorf("SMTP_PASS is required in %s", envPath)
 	}
-	if cfg.DevCVPath == "" {
-		return nil, fmt.Errorf("DEV_CV_PATH is required in %s", envPath)
+	if cfg.CVPath == "" {
+		return nil, fmt.Errorf("CV_PATH is required in %s", envPath)
 	}
-	if cfg.DevCVSummaryPath == "" {
-		return nil, fmt.Errorf("DEV_CV_SUMMARY_PATH is required in %s", envPath)
-	}
-	if cfg.FnBCVPath == "" {
-		return nil, fmt.Errorf("FNB_CV_PATH is required in %s", envPath)
-	}
-	if cfg.FnBCVSummaryPath == "" {
-		return nil, fmt.Errorf("FNB_CV_SUMMARY_PATH is required in %s", envPath)
+	if cfg.CVSummaryPath == "" {
+		return nil, fmt.Errorf("CV_SUMMARY_PATH is required in %s", envPath)
 	}
 	if cfg.AllowedTelegramUsername == "" {
 		return nil, fmt.Errorf("ALLOWED_TELEGRAM_USERNAME is required in %s", envPath)
