@@ -15,7 +15,7 @@ Sebelum menjalankan bot, pastikan Anda telah menyiapkan konfigurasi berikut pada
 4. Masukkan ke file `.env`:
    ```ini
    GEMINI_API_KEY=AIzaSy...
-   GEMINI_MODEL=gemini-2.5-pro
+   GEMINI_MODEL=gemini-1.5-flash
    ```
 
 ### B. Membuat Bot Telegram & Token
@@ -139,4 +139,4 @@ Setelah menjalankan perintah `/edit`, bot akan memperbarui dan menampilkan previ
    - Posisi dan email penerima yang sama pernah Anda lamar sebelumnya.
 
 3. **Ganti Model AI**:
-   Ubah `GEMINI_MODEL` pada file `.env` ke `gemini-2.5-pro` untuk kualitas teks tertinggi, atau `gemini-2.5-flash` untuk kecepatan ekstraksi tercepat.
+   Ubah `GEMINI_MODEL` pada file `.env` ke `gemini-1.5-pro` untuk kualitas teks tertinggi, atau `gemini-1.5-flash` untuk kecepatan ekstraksi tercepat.
