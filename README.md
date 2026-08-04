@@ -38,42 +38,60 @@ Sebelum menjalankan bot, pastikan Anda telah menyiapkan konfigurasi berikut pada
    SMTP_PORT=587
    SMTP_USER=email_anda@gmail.com
    SMTP_PASS=kodesandi16digit
-   DEFAULT_SENDER_NAME=Akhmad Rizki Ramadhani
+   DEFAULT_SENDER_NAME=Nama Lengkap Anda
    ```
 
 ### D. File CV PDF & Ringkasan CV
-Pastikan dua file ini berada di dalam direktori bot:
-- `CV Akhmad Rizki Ramadhani ( English ).pdf` (File PDF CV fisik yang dilampirkan ke email).
-- `cv.md` (Ringkasan CV teks yang dibaca oleh Gemini AI).
+Pastikan dua file ini berada di dalam direktori bot (sesuai path pada `.env`):
+- `cv.pdf` (File PDF CV fisik yang dilampirkan ke email lamaran).
+- `cv.md` (Ringkasan teks/markdown isi CV yang dibaca oleh Gemini AI).
 
 ---
 
 ## 🏃 2. Cara Menjalankan Bot
 
-### A. Mode Pengujian (Terminal Langsung)
+### A. Persiapan Lingkungan
+1. Salin file template `.env.example` menjadi `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Lengkapi variabel di dalam file `.env` sesuai dengan kredensial API, Telegram Bot Token, SMTP Gmail, dan path CV Anda.
+
+### B. Mode Pengujian (Development / Terminal)
+Jalankan bot secara langsung tanpa kompilasi:
 ```bash
 go run main.go
 ```
 
-### B. Mode Produksi (Kompilasi & Latar Belakang / Background)
-Jika Anda ingin bot tetap berjalan setelah terminal ditutup:
+### C. Mode Produksi (Production / Background)
+Untuk menjalankan bot secara berkelanjutan di server atau di latar belakang:
 
 1. **Kompilasi Program**:
-   ```bash
-   go build -o jobber main.go
-   ```
-2. **Jalankan di Background**:
-   ```bash
-   nohup ./jobber > bot.log 2>&1 &
-   ```
+   - **Linux / macOS**:
+     ```bash
+     go build -o jobber main.go
+     ```
+   - **Windows**:
+     ```cmd
+     go build -o jobber.exe main.go
+     ```
+
+2. **Jalankan di Latar Belakang (Background)**:
+   - **Linux / macOS**:
+     ```bash
+     nohup ./jobber > bot.log 2>&1 &
+     ```
+   - **Windows**:
+     Jalankan `jobber.exe` melalui Terminal / Command Prompt.
+
 3. **Melihat Log Aktivitas**:
    ```bash
    tail -f bot.log
    ```
+
 4. **Menghentikan Bot**:
-   ```bash
-   pkill jobber
-   ```
+   - **Linux / macOS**: `pkill jobber`
+   - **Windows**: Tekan `Ctrl + C` pada terminal atau hentikan proses via Task Manager.
 
 ---
 
