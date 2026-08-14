@@ -1,9 +1,7 @@
 .env
 history.json
 jobber
+jobber.exe
 *.test
 *.log
-*.pdf
-cv-dev.md
-cv-fnb.md
-cv.md
+
