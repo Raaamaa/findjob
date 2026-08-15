@@ -22,61 +22,61 @@ type Config struct {
 	AllowedTelegramUsername string
 }
 
-// LoadConfig parses the configuration key-value pairs from the environment file.
+// LoadConfig parses the configuration key-value pairs from the environment file or system environment variables.
 func LoadConfig(envPath string) (*Config, error) {
-	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("config file %s does not exist", envPath)
-	}
-
-	file, err := os.Open(envPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
-	}
-	defer file.Close()
-
 	envVars := make(map[string]string)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
+
+	if _, err := os.Stat(envPath); err == nil {
+		file, err := os.Open(envPath)
+		if err == nil {
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) != 2 {
+					continue
+				}
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				if (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
+					(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+					value = value[1 : len(value)-1]
+				}
+				envVars[key] = value
+			}
+			file.Close()
 		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		if (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
-			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
-			value = value[1 : len(value)-1]
-		}
-		envVars[key] = value
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+	getEnv := func(key string) string {
+		if val, ok := envVars[key]; ok && val != "" {
+			return val
+		}
+		return os.Getenv(key)
 	}
 
-	model := envVars["GEMINI_MODEL"]
+	model := getEnv("GEMINI_MODEL")
 	if model == "" {
-		model = "gemini-2.5-flash"
+		model = "gemini-flash-latest"
 	}
 
 	cfg := &Config{
-		TelegramBotToken:        envVars["TELEGRAM_BOT_TOKEN"],
-		GeminiAPIKey:            envVars["GEMINI_API_KEY"],
+		TelegramBotToken:        getEnv("TELEGRAM_BOT_TOKEN"),
+		GeminiAPIKey:            getEnv("GEMINI_API_KEY"),
 		GeminiModel:             model,
-		SMTPHost:                envVars["SMTP_HOST"],
-		SMTPUser:                envVars["SMTP_USER"],
-		SMTPPass:                envVars["SMTP_PASS"],
-		DefaultSenderName:       envVars["DEFAULT_SENDER_NAME"],
-		CVPath:                  envVars["CV_PATH"],
-		CVSummaryPath:           envVars["CV_SUMMARY_PATH"],
-		AllowedTelegramUsername: strings.TrimPrefix(envVars["ALLOWED_TELEGRAM_USERNAME"], "@"),
+		SMTPHost:                getEnv("SMTP_HOST"),
+		SMTPUser:                getEnv("SMTP_USER"),
+		SMTPPass:                getEnv("SMTP_PASS"),
+		DefaultSenderName:       getEnv("DEFAULT_SENDER_NAME"),
+		CVPath:                  getEnv("CV_PATH"),
+		CVSummaryPath:           getEnv("CV_SUMMARY_PATH"),
+		AllowedTelegramUsername: strings.TrimPrefix(getEnv("ALLOWED_TELEGRAM_USERNAME"), "@"),
 	}
 
-	portStr := envVars["SMTP_PORT"]
+	portStr := getEnv("SMTP_PORT")
 	if portStr != "" {
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
@@ -86,31 +86,31 @@ func LoadConfig(envPath string) (*Config, error) {
 	}
 
 	if cfg.TelegramBotToken == "" {
-		return nil, fmt.Errorf("TELEGRAM_BOT_TOKEN is required in %s", envPath)
+		return nil, fmt.Errorf("TELEGRAM_BOT_TOKEN is required")
 	}
 	if cfg.GeminiAPIKey == "" {
-		return nil, fmt.Errorf("GEMINI_API_KEY is required in %s", envPath)
+		return nil, fmt.Errorf("GEMINI_API_KEY is required")
 	}
 	if cfg.SMTPHost == "" {
-		return nil, fmt.Errorf("SMTP_HOST is required in %s", envPath)
+		return nil, fmt.Errorf("SMTP_HOST is required")
 	}
 	if cfg.SMTPPort == 0 {
-		return nil, fmt.Errorf("SMTP_PORT is required in %s", envPath)
+		return nil, fmt.Errorf("SMTP_PORT is required")
 	}
 	if cfg.SMTPUser == "" {
-		return nil, fmt.Errorf("SMTP_USER is required in %s", envPath)
+		return nil, fmt.Errorf("SMTP_USER is required")
 	}
 	if cfg.SMTPPass == "" {
-		return nil, fmt.Errorf("SMTP_PASS is required in %s", envPath)
+		return nil, fmt.Errorf("SMTP_PASS is required")
 	}
 	if cfg.CVPath == "" {
-		return nil, fmt.Errorf("CV_PATH is required in %s", envPath)
+		return nil, fmt.Errorf("CV_PATH is required")
 	}
 	if cfg.CVSummaryPath == "" {
-		return nil, fmt.Errorf("CV_SUMMARY_PATH is required in %s", envPath)
+		return nil, fmt.Errorf("CV_SUMMARY_PATH is required")
 	}
 	if cfg.AllowedTelegramUsername == "" {
-		return nil, fmt.Errorf("ALLOWED_TELEGRAM_USERNAME is required in %s", envPath)
+		return nil, fmt.Errorf("ALLOWED_TELEGRAM_USERNAME is required")
 	}
 
 	return cfg, nil

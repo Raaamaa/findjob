@@ -36,11 +36,11 @@ var (
 func main() {
 	envPath := ".env"
 
-	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-		log.Fatalf("Error: Berkas konfigurasi %s tidak ditemukan.", envPath)
+	if _, err := os.Stat(envPath); err == nil {
+		config.CheckPermissions(envPath)
+	} else {
+		log.Printf("Info: Berkas %s tidak ditemukan, memuat konfigurasi dari Environment Variables bawaan sistem/cloud...", envPath)
 	}
-
-	config.CheckPermissions(envPath)
 
 	cfg, err := config.LoadConfig(envPath)
 	if err != nil {
