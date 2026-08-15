@@ -95,6 +95,7 @@ Portofolio: https://ramadhani-portofolio.vercel.app/
 Ketentuan Tambahan:
 - Subjek email (subject) wajib menggunakan subjek khusus yang diminta/tertulis di dalam gambar lowongan (misalnya "Kitchen_peachy"). Jika tidak ada instruksi subjek khusus di dalam gambar, gunakan format: "Berkas Lamaran - [Nama Lengkap Pelamar] - [Nama Posisi]"
 - Draf email wajib menggunakan baris kosong (double newline) untuk memisahkan setiap paragraf agar terlihat rapi dan terstruktur.
+- Gunakan gaya bahasa yang simpel tetapi tetap profesional dan pastikan juga agar penggunaan bahasanya seperti asli manusia jangan seperti bahasa ai.
 - Jangan menggunakan kata-kata overclaim atau berlebihan seperti "profesional", "professional", "ahli", "expert", dll. Tuliskan peran atau latar belakang secara jujur dan apa adanya sesuai dengan riwayat pada CV (misalnya: "lulusan Komunikasi Visual", "pernah bekerja sebagai video editor freelance", "memiliki pengalaman membuat konten media sosial").
 - Jangan sertakan placeholder kosong atau teks tanda kurung siku [] dalam draf akhir. Semua harus terisi menggunakan data nyata dari CV.`, cvSummary)
 
